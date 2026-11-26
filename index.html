@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b1120">
-<meta name="description" content="光功率工具箱：mW 与 dBm 双向换算、分光器各端口功率计算，光通信/光功率计常用">
+<meta name="description" content="实用电子工具箱：dBm换算、分光功率计算、EIA-96贴片电阻编码查询">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="光功率工具">
+<meta name="apple-mobile-web-app-title" content="电子工具箱">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>光功率工具箱 · dBm换算 / 分光计算</title>
+<title>电子工具箱 · dBm换算 / 分光计算 / 电阻编码</title>
 <style>
   :root{
     --bg:#0b1120; --bg-soft:#111a2e; --card:#141f38; --card-hi:#1a2947;
@@ -48,14 +48,14 @@
   header p{margin:0;color:var(--muted);font-size:12px}
 
   .modules{
-    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
     background:#0f1a30;border:1px solid var(--line);border-radius:14px;
     padding:6px;margin-bottom:20px;
   }
   .module{
     border:1px solid transparent;background:transparent;color:var(--muted);
-    border-radius:10px;padding:12px 8px;font-size:13px;font-weight:600;
-    display:flex;align-items:center;justify-content:center;gap:7px;transition:.18s;
+    border-radius:10px;padding:10px 3px;font-size:12px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:.18s;
   }
   .module svg{width:17px;height:17px}
   .module:hover{color:var(--txt);background:rgba(125,160,220,.06)}
@@ -174,6 +174,68 @@
   .port .pw .mw{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
   .empty-tip{text-align:center;color:var(--dim);font-size:13px;padding:22px 0}
 
+  /* 电阻编码模块 */
+  .res-hero{text-align:center;padding:6px 0 2px}
+  .res-hero .rv{
+    font-family:var(--mono);font-size:34px;font-weight:700;color:var(--amber);
+    line-height:1.2;word-break:break-all;
+  }
+  .res-hero .rv.empty{color:var(--dim);font-size:20px;font-weight:500}
+  .res-hero .rsub{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+
+  .resistor{
+    display:flex;align-items:center;justify-content:center;gap:0;margin:22px auto 8px;
+  }
+  .resistor .cap{
+    width:26px;height:66px;background:linear-gradient(180deg,#e8edf5,#b9c4d6);
+    border-radius:6px 2px 2px 6px;box-shadow:inset -2px 0 4px rgba(0,0,0,.15);
+  }
+  .resistor .cap.r{border-radius:2px 6px 6px 2px;box-shadow:inset 2px 0 4px rgba(0,0,0,.15)}
+  .resistor .body{
+    display:flex;background:linear-gradient(180deg,#2a3342,#1b2230);
+    border:2px solid #3a4557;padding:0 4px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .resistor .digit{
+    width:42px;height:66px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:30px;font-weight:700;color:#f0f2f6;
+    border-right:1px solid rgba(255,255,255,.06);
+  }
+  .resistor .digit:last-child{border-right:0}
+  .resistor .digit.mul{color:var(--amber)}
+
+  .picker-wrap{position:relative;margin-top:6px}
+  .picker-band{
+    position:absolute;left:0;right:0;top:50%;height:56px;transform:translateY(-50%);
+    border-top:1px solid var(--cyan);border-bottom:1px solid var(--cyan);
+    background:linear-gradient(180deg,rgba(56,214,208,.05),rgba(56,214,208,.12),rgba(56,214,208,.05));
+    pointer-events:none;border-radius:8px;z-index:1;
+  }
+  .wheels{
+    display:flex;gap:8px;justify-content:center;touch-action:pan-y;
+  }
+  .wheel{
+    flex:1;max-width:120px;height:224px;overflow-y:scroll;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 28%,#000 72%,transparent 100%);
+    mask-image:linear-gradient(180deg,transparent 0%,#000 28%,#000 72%,transparent 100%);
+  }
+  .wheel::-webkit-scrollbar{display:none}
+  .wheel-inner{padding:84px 0}
+  .wheel-item{
+    height:56px;display:flex;align-items:center;justify-content:center;
+    scroll-snap-align:center;font-family:var(--mono);font-size:24px;
+    color:var(--dim);transition:color .12s,font-size .12s;cursor:pointer;
+  }
+  .wheel-item.near{color:var(--muted)}
+  .wheel-item.on{color:var(--cyan);font-size:28px;font-weight:700}
+  .wheel.mul .wheel-item.on{color:var(--amber)}
+
+  .mul-table{width:100%;border-collapse:collapse;margin-top:4px;font-size:12px}
+  .mul-table td{padding:6px 8px;border-bottom:1px solid var(--line);font-family:var(--mono)}
+  .mul-table td:first-child{color:var(--amber);font-weight:700;width:34px}
+  .mul-table td:last-child{color:var(--muted);text-align:right}
+
   .formula{
     background:rgba(17,29,51,.7);border:1px solid var(--line);border-radius:14px;
     padding:16px 18px;margin-top:22px;
@@ -204,8 +266,8 @@
         <path d="M3 12h3l2-6 3 12 3-9 2 3h5"/>
       </svg>
     </div>
-    <h1>光功率工具箱</h1>
-    <p>选择模块 · 光通信 / 光功率计常用计算</p>
+    <h1>电子工具箱</h1>
+    <p>选择模块 · 光通信 / 常用电子计算</p>
   </header>
 
   <div class="modules" role="tablist">
@@ -216,6 +278,10 @@
     <button class="module" data-target="pageSplit" role="tab" aria-selected="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h5M9 12v-6h7M9 12v6h7M16 6h4M16 18h4"/></svg>
       分光功率计算
+    </button>
+    <button class="module" data-target="pageResistor" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l2-5 4 10 4-10 2 5h5"/></svg>
+      电阻编码查询
     </button>
   </div>
 
@@ -347,8 +413,54 @@
     </section>
   </div>
 
+  <!-- ============ 模块三：EIA-96 电阻编码查询 ============ -->
+  <div class="page" id="pageResistor">
+    <section class="card" aria-label="电阻编码查询">
+      <div class="card-head"><span class="dot a"></span><h2>EIA-96 贴片电阻编码</h2><span class="tag">3 位代码</span></div>
+
+      <div class="res-hero">
+        <div class="rv" id="resValue">13 kΩ</div>
+        <div class="rsub" id="resSub">代码 12C · 130 × 10²</div>
+      </div>
+
+      <div class="resistor" aria-hidden="true">
+        <span class="cap"></span>
+        <div class="body">
+          <div class="digit" id="rd1">1</div>
+          <div class="digit" id="rd2">2</div>
+          <div class="digit mul" id="rd3">C</div>
+        </div>
+        <span class="cap r"></span>
+      </div>
+
+      <div class="quick" style="margin-top:14px">
+        <h3 style="text-align:center">滑动下方滚轮选择编码</h3>
+      </div>
+
+      <div class="picker-wrap">
+        <div class="picker-band"></div>
+        <div class="wheels">
+          <div class="wheel" id="wheel1"><div class="wheel-inner" id="wi1"></div></div>
+          <div class="wheel" id="wheel2"><div class="wheel-inner" id="wi2"></div></div>
+          <div class="wheel mul" id="wheel3"><div class="wheel-inner" id="wi3"></div></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="resCopy">复制阻值</button>
+      </div>
+    </section>
+
+    <section class="formula">
+      <h3>EIA-96 编码规则</h3>
+      <div class="frow"><span class="k">阻值</span><span class="v">前两位数字查表 × 字母倍率</span></div>
+      <div class="frow"><span class="k">示例 12C</span><span class="v">130 × 10² = 13000 Ω = 13 kΩ</span></div>
+      <div class="hint">前两位数字 01~96 对应 E96 标准数序（01=100, 12=130, 96=976）；第三位字母为倍率。下表为全部字母倍率：</div>
+      <table class="mul-table" id="mulTable"></table>
+    </section>
+  </div>
+
   <footer>
-    纯本地计算 · 无需联网存储数据<br>光功率工具箱 · Optical Power Toolbox
+    纯本地计算 · 无需联网存储数据<br>电子工具箱 · Electronics Toolbox
   </footer>
 </div>
 
@@ -383,6 +495,10 @@
       document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
       document.getElementById(b.dataset.target).classList.add('active');
       window.scrollTo({top:0,behavior:'smooth'});
+      // 电阻模块从隐藏变可见后，重建滚轮滚动位置（隐藏时 scrollTop 设置无效）
+      if(b.dataset.target==='pageResistor' && typeof window.resetResWheels==='function'){
+        setTimeout(window.resetResWheels,30);
+      }
     });
   });
 
@@ -535,6 +651,117 @@
   });
   // 初始化占位提示
   ilIn.placeholder=fmt(ilSuggest[8]);
+
+  /* ---------- 模块三：EIA-96 电阻编码查询 ---------- */
+  var E96=[100,102,105,107,110,113,115,118,121,124,127,130,133,137,140,143,147,150,
+           154,158,162,165,169,174,178,182,187,191,196,200,205,210,215,221,226,232,
+           237,243,249,255,261,267,274,280,287,294,301,309,316,324,332,340,348,357,
+           365,374,383,392,402,412,422,432,442,453,464,475,487,499,511,523,536,549,
+           562,576,590,604,619,634,649,665,681,698,715,732,750,768,787,806,825,845,
+           866,887,909,931,953,976];
+  var MUL=[['A',1],['B',10],['C',100],['D',1000],['E',10000],['F',100000],
+           ['H',0.01],['R',0.1],['S',0.001],['T',0.0001],['U',0.00001],
+           ['V',0.000001],['X',0.0000001],['Y',1e-8],['Z',1e-9]];
+  var mulObj={};MUL.forEach(function(p){mulObj[p[0]]=p[1];});
+  var ITEM_H=56;
+
+  // 倍率表
+  var mulTable=document.getElementById('mulTable');
+  MUL.forEach(function(p){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+p[0]+'</td><td>× '+fmt(p[1])+' Ω</td>';
+    mulTable.appendChild(tr);
+  });
+
+  // 阻值格式化：Ω / kΩ / MΩ / mΩ
+  function fmtRes(ohm){
+    if(!isFinite(ohm))return '—';
+    var a=Math.abs(ohm);
+    if(a>=1e6) return fmt(ohm/1e6)+' MΩ';
+    if(a>=1e3) return fmt(ohm/1e3)+' kΩ';
+    if(a>=1)   return fmt(ohm)+' Ω';
+    if(a>=1e-3)return fmt(ohm*1e3)+' mΩ';
+    return ohm.toExponential(3).replace(/\.?0+e/,'e')+' Ω';
+  }
+
+  var d1=1,d2=2,d3=2; // 默认 1,2,C → 12C（滚轮值即数字本身）
+
+  function buildWheel(wheelId,innerId,items,initial,onChange,cls){
+    var wheel=document.getElementById(wheelId), inner=document.getElementById(innerId);
+    items.forEach(function(it,i){
+      var d=document.createElement('div');
+      d.className='wheel-item'+(i===initial?' on':(Math.abs(i-initial)===1?' near':''));
+      d.textContent=it;
+      d.dataset.i=i;
+      d.addEventListener('click',function(){
+        wheel.scrollTo({top:i*ITEM_H,behavior:'smooth'});
+      });
+      inner.appendChild(d);
+    });
+    var itemsEls=inner.querySelectorAll('.wheel-item');
+    function update(){
+      var idx=Math.round(wheel.scrollTop/ITEM_H);
+      idx=Math.max(0,Math.min(items.length-1,idx));
+      itemsEls.forEach(function(el,i){
+        el.classList.toggle('on',i===idx);
+        el.classList.toggle('near',Math.abs(i-idx)===1);
+      });
+      onChange(idx);
+    }
+    var ticking=false;
+    wheel.addEventListener('scroll',function(){
+      if(!ticking){ticking=true;requestAnimationFrame(function(){update();ticking=false;});}
+    });
+    // 初始化滚动位置：元素隐藏时(offsetHeight=0)不调用 update，避免把 d 值重置成 0
+    setTimeout(function(){
+      if(wheel.offsetHeight===0) return;
+      wheel.scrollTop=initial*ITEM_H;
+    },0);
+    return {set:function(i){wheel.scrollTop=i*ITEM_H;},el:wheel};
+  }
+
+  function updateRes(){
+    var code=(''+d1)+(''+d2);
+    var num=parseInt(code,10);
+    var letter=MUL[d3][0], mult=mulObj[letter];
+    document.getElementById('rd1').textContent=''+d1;
+    document.getElementById('rd2').textContent=''+d2;
+    document.getElementById('rd3').textContent=letter;
+    var vEl=document.getElementById('resValue');
+    if(num<1||num>96){
+      vEl.textContent='无效代码';vEl.classList.add('empty');
+      document.getElementById('resSub').textContent='代码 '+code+letter+' · 有效范围为 01~96';
+      document.getElementById('pageResistor')._copyText='';
+      return;
+    }
+    var base=E96[num-1];
+    var ohm=base*mult;
+    vEl.textContent=fmtRes(ohm);vEl.classList.remove('empty');
+    document.getElementById('resSub').textContent=
+      '代码 '+code+letter+' · '+fmt(base)+' × '+fmt(mult)+' Ω';
+    document.getElementById('pageResistor')._copyText=code+letter+' = '+fmtRes(ohm);
+  }
+
+  // 两位数字滚轮均为 0-9（组合 01~96 有效）
+  var digits0=[];for(var i=0;i<10;i++)digits0.push(''+i);
+  var wh1=buildWheel('wheel1','wi1',digits0,d1,function(i){d1=i;updateRes();});
+  var wh2=buildWheel('wheel2','wi2',digits0,d2,function(i){d2=i;updateRes();});
+  var mulLetters=MUL.map(function(p){return p[0];});
+  var wh3=buildWheel('wheel3','wi3',mulLetters,d3,function(i){d3=i;updateRes();},'mul');
+  updateRes();
+  // 模块可见后重置滚轮位置（首次隐藏时 scrollTop 无效）
+  window.resetResWheels=function(){
+    // 先记住目标 d 值（scrollTop 设置会触发 scroll→update 改写 d），设完再恢复
+    var t1=d1,t2=d2,t3=d3;
+    wh1.el.scrollTop=t1*ITEM_H;wh2.el.scrollTop=t2*ITEM_H;wh3.el.scrollTop=t3*ITEM_H;
+    d1=t1;d2=t2;d3=t3;
+    updateRes();
+  };
+
+  document.getElementById('resCopy').addEventListener('click',function(){
+    var t=document.getElementById('pageResistor')._copyText;
+    if(t)copyText(t,this);
+  });
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});

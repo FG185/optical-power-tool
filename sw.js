@@ -1,5 +1,5 @@
-var CACHE = 'dbm-converter-v5';
-var ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon.svg'];
+var CACHE = 'dbm-converter-v6';
+var ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon.svg', './logo.png'];
 
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ self.skipWaiting(); }));

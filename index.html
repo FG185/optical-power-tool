@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1120">
+<meta name="description" content="光功率工具箱：mW 与 dBm 双向换算、分光器各端口功率计算，光通信/光功率计常用">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="光功率工具">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<title>光功率工具箱 · dBm换算 / 分光计算</title>
+<style>
+  :root{
+    --bg:#0b1120; --bg-soft:#111a2e; --card:#141f38; --card-hi:#1a2947;
+    --line:rgba(125,160,220,.15); --line-hi:rgba(125,160,220,.3);
+    --txt:#eaf1ff; --muted:#93a4c4; --dim:#5f7196;
+    --cyan:#38d6d0; --blue:#5aa0ff; --cyan-soft:rgba(56,214,208,.1);
+    --blue-soft:rgba(90,160,255,.1); --ok:#4ade80; --amber:#f0b357;
+    --radius:18px; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 620px at 12% -8%,#16264a 0%,transparent 55%),
+               radial-gradient(900px 520px at 105% 0%,#0d2b38 0%,transparent 50%),
+               var(--bg);
+    background-attachment:fixed;
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    min-height:100vh; line-height:1.5;
+    padding:calc(env(safe-area-inset-top) + 22px) 18px calc(env(safe-area-inset-bottom) + 32px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  header{text-align:center;margin-bottom:20px}
+  .logo{
+    width:54px;height:54px;margin:0 auto 12px;border-radius:15px;
+    background:linear-gradient(145deg,#1c3358,#132744);
+    border:1px solid var(--line-hi);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 30px rgba(0,180,190,.16),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .logo svg{width:32px;height:32px}
+  h1{font-size:20px;font-weight:650;margin:0 0 5px;letter-spacing:.3px}
+  header p{margin:0;color:var(--muted);font-size:12px}
+
+  .modules{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    background:#0f1a30;border:1px solid var(--line);border-radius:14px;
+    padding:6px;margin-bottom:20px;
+  }
+  .module{
+    border:1px solid transparent;background:transparent;color:var(--muted);
+    border-radius:10px;padding:12px 8px;font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:7px;transition:.18s;
+  }
+  .module svg{width:17px;height:17px}
+  .module:hover{color:var(--txt);background:rgba(125,160,220,.06)}
+  .module.active{
+    color:#fff;border-color:transparent;
+    background:linear-gradient(135deg,#159e9b,#1b7fc4);
+    box-shadow:0 4px 16px rgba(21,158,155,.28);
+  }
+
+  .page{display:none}
+  .page.active{display:block}
+
+  .card{
+    background:linear-gradient(160deg,var(--card-hi),var(--card));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;margin-bottom:16px;
+    box-shadow:0 12px 34px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .card-head{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .dot.c{background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+  .dot.b{background:var(--blue);box-shadow:0 0 12px var(--blue)}
+  .dot.a{background:var(--amber);box-shadow:0 0 12px var(--amber)}
+  .card-head h2{font-size:14px;font-weight:600;margin:0;letter-spacing:.3px}
+  .card-head .tag{margin-left:auto;font-size:11px;color:var(--dim);font-family:var(--mono)}
+
+  label.field-label{display:block;font-size:12px;color:var(--muted);margin:14px 0 8px}
+  label.field-label:first-of-type{margin-top:0}
+  .input-row{display:flex;align-items:stretch;gap:10px}
+  .input-box{
+    flex:1;display:flex;align-items:center;background:#0d1729;
+    border:1.5px solid var(--line);border-radius:13px;
+    padding:0 14px;transition:border-color .18s,box-shadow .18s;
+  }
+  .input-box:focus-within{border-color:var(--cyan);box-shadow:0 0 0 4px var(--cyan-soft)}
+  .blue .input-box:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+  input[type=number],input[type=text]{
+    width:100%;background:transparent;border:0;outline:0;color:var(--txt);
+    font-size:26px;font-family:var(--mono);font-weight:600;padding:15px 0;
+    -moz-appearance:textfield;
+  }
+  input[type=text]{font-size:19px}
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  input::placeholder{color:#3d4d6b}
+  .unit{color:var(--muted);font-size:15px;font-family:var(--mono);padding-left:10px;white-space:nowrap}
+
+  .seg{display:flex;background:#0d1729;border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px}
+  .seg button{
+    flex:1;border:0;background:transparent;color:var(--muted);
+    border-radius:8px;padding:8px;font-size:12px;font-family:var(--mono);font-weight:500;
+  }
+  .seg button.on{background:#1b3358;color:var(--cyan);box-shadow:inset 0 0 0 1px var(--line-hi)}
+  .blue .seg button.on{color:var(--blue)}
+
+  .result{
+    margin-top:16px;background:#0c1628;border:1px dashed var(--line-hi);
+    border-radius:13px;padding:15px 16px;display:flex;align-items:center;gap:12px;
+  }
+  .result .r-label{font-size:12px;color:var(--muted);flex:none}
+  .result .r-value{
+    font-family:var(--mono);font-size:25px;font-weight:700;color:var(--cyan);
+    flex:1;text-align:right;word-break:break-all;line-height:1.2;
+  }
+  .blue .result .r-value{color:var(--blue)}
+  .result .r-value.empty{color:var(--dim);font-size:18px;font-weight:500}
+
+  .btn-row{display:flex;gap:10px;margin-top:14px}
+  button{
+    font-family:inherit;cursor:pointer;border:1px solid var(--line-hi);
+    background:#152541;color:var(--txt);border-radius:11px;
+    padding:10px 14px;font-size:13px;font-weight:500;transition:.15s;
+  }
+  button:hover{background:#1c3053;border-color:var(--line-hi)}
+  button:active{transform:scale(.97)}
+  button.primary{background:linear-gradient(135deg,#159e9b,#1b7fc4);border-color:transparent;color:#fff;flex:1}
+  button.primary:hover{filter:brightness(1.1)}
+  button.copy{flex:none;min-width:78px}
+  button.copy.done{color:var(--ok);border-color:rgba(74,222,128,.4)}
+
+  .quick{margin-top:2px}
+  .quick h3{font-size:13px;font-weight:600;color:var(--muted);margin:6px 2px 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{
+    background:#111d33;border:1px solid var(--line);border-radius:10px;
+    padding:9px 12px;font-size:12px;font-family:var(--mono);color:var(--muted);transition:.15s;
+  }
+  .chip:hover{border-color:var(--cyan);color:var(--txt);background:var(--cyan-soft)}
+  .chip.on{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+  .chip b{color:var(--cyan);font-weight:600}
+
+  .summary{
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+  }
+  .summary .s{
+    flex:1;min-width:92px;background:#0d1729;border:1px solid var(--line);
+    border-radius:11px;padding:10px 12px;
+  }
+  .summary .s .k{font-size:11px;color:var(--muted)}
+  .summary .s .v{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--cyan);margin-top:3px}
+
+  .ports{display:flex;flex-direction:column;gap:8px}
+  .port{
+    display:flex;align-items:center;gap:12px;background:#0d1729;
+    border:1px solid var(--line);border-radius:11px;padding:11px 14px;
+  }
+  .port .idx{
+    width:30px;height:30px;border-radius:8px;flex:none;
+    background:linear-gradient(135deg,#159e9b,#1b7fc4);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;
+  }
+  .port .ratio{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:52px}
+  .port .pw{margin-left:auto;text-align:right}
+  .port .pw .dbm{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--cyan)}
+  .port .pw .mw{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+  .empty-tip{text-align:center;color:var(--dim);font-size:13px;padding:22px 0}
+
+  .formula{
+    background:rgba(17,29,51,.7);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-top:22px;
+  }
+  .formula h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600}
+  .frow{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .frow:last-child{border-bottom:0}
+  .frow .k{color:var(--muted)}
+  .frow .v{font-family:var(--mono);color:var(--txt)}
+  .hint{margin-top:12px;font-size:12px;color:var(--dim);line-height:1.6}
+
+  footer{text-align:center;color:var(--dim);font-size:11px;margin-top:26px;line-height:1.8}
+
+  @media(min-width:600px){
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .cols .card{margin-bottom:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="url(#lg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#38d6d0"/><stop offset="1" stop-color="#5aa0ff"/>
+        </linearGradient></defs>
+        <path d="M3 12h3l2-6 3 12 3-9 2 3h5"/>
+      </svg>
+    </div>
+    <h1>光功率工具箱</h1>
+    <p>选择模块 · 光通信 / 光功率计常用计算</p>
+  </header>
+
+  <div class="modules" role="tablist">
+    <button class="module active" data-target="pageConvert" role="tab" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
+      dBm ⇄ mW 换算
+    </button>
+    <button class="module" data-target="pageSplit" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h5M9 12v-6h7M9 12v6h7M16 6h4M16 18h4"/></svg>
+      分光功率计算
+    </button>
+  </div>
+
+  <!-- ============ 模块一：dBm ⇄ mW ============ -->
+  <div class="page active" id="pageConvert">
+    <div class="cols">
+      <section class="card" aria-label="毫瓦转dBm">
+        <div class="card-head"><span class="dot c"></span><h2>mW → dBm</h2><span class="tag">10·log₁₀(P)</span></div>
+        <label class="field-label" for="mwIn">输入功率 (mW)</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="number" id="mwIn" inputmode="decimal" step="any" min="0" placeholder="例如 1" autocomplete="off">
+            <span class="unit">mW</span>
+          </div>
+        </div>
+        <div class="result">
+          <span class="r-label">=</span>
+          <span class="r-value empty" id="dbmOut">— dBm</span>
+          <button class="copy" id="copyDbm">复制</button>
+        </div>
+        <div class="btn-row"><button class="primary" id="clearMw">清空</button></div>
+      </section>
+
+      <section class="card blue" aria-label="dBm转毫瓦">
+        <div class="card-head"><span class="dot b"></span><h2>dBm → mW</h2><span class="tag">10^(dBm/10)</span></div>
+        <label class="field-label" for="dbmIn">输入功率 (dBm)</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="number" id="dbmIn" inputmode="decimal" step="any" placeholder="例如 0" autocomplete="off">
+            <span class="unit">dBm</span>
+          </div>
+        </div>
+        <div class="result">
+          <span class="r-label">=</span>
+          <span class="r-value empty" id="mwOut">— mW</span>
+          <button class="copy" id="copyMw">复制</button>
+        </div>
+        <div class="btn-row"><button class="primary" id="clearDbm">清空</button></div>
+      </section>
+    </div>
+
+    <section class="quick">
+      <h3>常用参考点 · 点击填入 dBm</h3>
+      <div class="chips" id="chips"></div>
+    </section>
+
+    <section class="formula">
+      <h3>换算关系</h3>
+      <div class="frow"><span class="k">mW → dBm</span><span class="v">dBm = 10 × log₁₀(P<sub>mW</sub>)</span></div>
+      <div class="frow"><span class="k">dBm → mW</span><span class="v">P<sub>mW</sub> = 10<sup>(dBm/10)</sup></span></div>
+      <div class="frow"><span class="k">基准</span><span class="v">0 dBm = 1 mW</span></div>
+      <div class="hint">每 +3 dB 功率约翻倍，每 +10 dB 功率 ×10；-70 dBm = 1e-7 mW = 100 pW，常用于弱光探测灵敏度。</div>
+    </section>
+  </div>
+
+  <!-- ============ 模块二：分光功率计算 ============ -->
+  <div class="page" id="pageSplit">
+    <section class="card" aria-label="分光参数输入">
+      <div class="card-head"><span class="dot a"></span><h2>输入参数</h2><span class="tag">Splitter Calc</span></div>
+
+      <label class="field-label">进光功率单位</label>
+      <div class="seg" id="pinUnitSeg">
+        <button data-unit="dBm" class="on">dBm</button>
+        <button data-unit="mW">mW</button>
+      </div>
+
+      <label class="field-label" for="pinIn">进光功率</label>
+      <div class="input-row">
+        <div class="input-box">
+          <input type="number" id="pinIn" inputmode="decimal" step="any" placeholder="例如 0" autocomplete="off">
+          <span class="unit" id="pinUnit">dBm</span>
+        </div>
+      </div>
+
+      <label class="field-label">分光方式</label>
+      <div class="seg" id="splitModeSeg">
+        <button data-mode="equal" class="on">等分 1:N</button>
+        <button data-mode="custom">自定义比例</button>
+      </div>
+
+      <label class="field-label">常用不均匀分光比 · 点击直接计算</label>
+      <div class="chips" id="ratioPresets"></div>
+
+      <div id="equalBox">
+        <label class="field-label">分光端口数 N（快捷选择）</label>
+        <div class="chips" id="nChips"></div>
+        <label class="field-label" for="nCustom">或手动输入端口数</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="number" id="nCustom" inputmode="numeric" step="1" min="2" max="128" placeholder="2 ~ 128" autocomplete="off" style="font-size:20px">
+            <span class="unit">路</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="customBox" style="display:none">
+        <label class="field-label" for="ratioIn">各端口比例（逗号/空格分隔）</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="text" id="ratioIn" inputmode="text" placeholder="如 50,50 或 10,20,70" autocomplete="off">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:8px">比例按相对值归一化，如 1,1,1,1 等同 25,25,25,25</div>
+      </div>
+
+      <label class="field-label" for="ilIn">插入损耗 IL（dB，可选）</label>
+      <div class="input-row">
+        <div class="input-box">
+          <input type="number" id="ilIn" inputmode="decimal" step="any" placeholder="0" autocomplete="off" style="font-size:20px">
+          <span class="unit">dB</span>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px">额外的器件损耗，不含理论分光损耗；可留空 (=0)</div>
+    </section>
+
+    <section class="card blue" aria-label="分光计算结果">
+      <div class="card-head"><span class="dot b"></span><h2>各端口输出功率</h2>
+        <button class="copy" id="copyAll" style="margin-left:auto">复制全部</button></div>
+      <div class="summary" id="summary"></div>
+      <div class="ports" id="ports"><div class="empty-tip">输入参数后显示各端口功率</div></div>
+    </section>
+
+    <section class="formula">
+      <h3>计算说明</h3>
+      <div class="frow"><span class="k">理论分光损耗</span><span class="v">10·log₁₀(N) dB</span></div>
+      <div class="frow"><span class="k">等分输出</span><span class="v">P<sub>out</sub> = P<sub>in</sub> − 10·log₁₀(N) − IL</span></div>
+      <div class="frow"><span class="k">按比例输出</span><span class="v">P<sub>i</sub> = P<sub>in</sub> + 10·log₁₀(r<sub>i</sub>/Σr) − IL</span></div>
+      <div class="hint">示例：0 dBm 进光经 1:8 等分（IL=0），每口 = −9.03 dBm = 0.125 mW。插入损耗按端口均匀计入。</div>
+    </section>
+  </div>
+
+  <footer>
+    纯本地计算 · 无需联网存储数据<br>光功率工具箱 · Optical Power Toolbox
+  </footer>
+</div>
+
+<script>
+  /* ---------- 通用格式化 ---------- */
+  function fmt(x){
+    if(!isFinite(x)) return null;
+    if(x===0) return '0';
+    var a=Math.abs(x);
+    if(a>=1e12 || a<1e-3) return x.toExponential(4).replace(/\.?0+e/,'e');
+    var d=a>=100?2:a>=1?4:6;
+    return parseFloat(x.toFixed(d)).toString();
+  }
+  function mwNice(mw){
+    var s=fmt(mw),extra='';
+    if(s!==null){
+      var units=[['W',1e3],['mW',1],['µW',1e-3],['nW',1e-6],['pW',1e-9],['fW',1e-12]];
+      for(var i=0;i<units.length;i++){
+        var u=units[i][1];
+        if(mw>=u && mw/u<1000){extra=' ('+fmt(mw/u)+' '+units[i][0]+')';break;}
+      }
+    }
+    return s+' mW'+extra;
+  }
+
+  /* ---------- 模块切换 ---------- */
+  var moduleBtns=document.querySelectorAll('.module');
+  moduleBtns.forEach(function(b){
+    b.addEventListener('click',function(){
+      moduleBtns.forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false');});
+      b.classList.add('active');b.setAttribute('aria-selected','true');
+      document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+      document.getElementById(b.dataset.target).classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+
+  /* ---------- 模块一：dBm ⇄ mW ---------- */
+  var mwIn=document.getElementById('mwIn'), dbmIn=document.getElementById('dbmIn');
+  var dbmOut=document.getElementById('dbmOut'), mwOut=document.getElementById('mwOut');
+  function calcMwToDbm(){
+    var v=parseFloat(mwIn.value);
+    if(mwIn.value.trim()===''||isNaN(v)||v<=0){dbmOut.textContent='— dBm';dbmOut.classList.add('empty');return;}
+    dbmOut.textContent=fmt(10*Math.log10(v))+' dBm';dbmOut.classList.remove('empty');
+  }
+  function calcDbmToMw(){
+    var v=parseFloat(dbmIn.value);
+    if(dbmIn.value.trim()===''||isNaN(v)){mwOut.textContent='— mW';mwOut.classList.add('empty');return;}
+    mwOut.textContent=mwNice(Math.pow(10,v/10));mwOut.classList.remove('empty');
+  }
+  mwIn.addEventListener('input',calcMwToDbm);
+  dbmIn.addEventListener('input',calcDbmToMw);
+  document.getElementById('clearMw').addEventListener('click',function(){mwIn.value='';calcMwToDbm();mwIn.focus();});
+  document.getElementById('clearDbm').addEventListener('click',function(){dbmIn.value='';calcDbmToMw();dbmIn.focus();});
+
+  function copyText(text,btn){
+    if(!text||text.indexOf('—')===0||text.indexOf('输入')===0) return;
+    var done=function(){var old=btn.textContent;btn.textContent='已复制';btn.classList.add('done');
+      setTimeout(function(){btn.textContent=old;btn.classList.remove('done');},1400);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallback(text,done);});}
+    else{fallback(text,done);}
+  }
+  function fallback(text,cb){
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb();}catch(e){}finally{document.body.removeChild(ta);}
+  }
+  document.getElementById('copyDbm').addEventListener('click',function(){copyText(dbmOut.textContent,this);});
+  document.getElementById('copyMw').addEventListener('click',function(){copyText(mwOut.textContent,this);});
+
+  var refs=[-70,-60,-50,-40,-30,-20,-10,-3,0,3,10,20,30];
+  var chips=document.getElementById('chips');
+  refs.forEach(function(d){
+    var b=document.createElement('button');b.className='chip';b.innerHTML='<b>'+d+'</b> dBm';
+    b.addEventListener('click',function(){
+      dbmIn.value=d;calcDbmToMw();
+      document.getElementById('pageConvert').querySelector('.blue').scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    chips.appendChild(b);
+  });
+
+  /* ---------- 模块二：分光功率计算 ---------- */
+  var pinIn=document.getElementById('pinIn'), ilIn=document.getElementById('ilIn');
+  var ratioIn=document.getElementById('ratioIn'), nCustom=document.getElementById('nCustom');
+  var pinUnit='dBm', splitMode='equal', curN=8, ilSuggest={2:0.2,4:0.3,8:0.5,16:0.8,32:1.2,64:1.5};
+
+  document.getElementById('pinUnitSeg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    pinUnit=b.dataset.unit;
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.getElementById('pinUnit').textContent=pinUnit;
+    pinIn.placeholder=pinUnit==='dBm'?'例如 0':'例如 1';
+    calcSplit();
+  });
+  document.getElementById('splitModeSeg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    splitMode=b.dataset.mode;
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.getElementById('equalBox').style.display=splitMode==='equal'?'':'none';
+    document.getElementById('customBox').style.display=splitMode==='custom'?'':'none';
+    calcSplit();
+  });
+
+  // 常用不均匀分光比快捷：点击切到自定义模式并填入比例
+  var ratioPresetsBox=document.getElementById('ratioPresets');
+  [['10:90','10,90'],['5:95','5,95'],['2:98','2,98'],['1:99','1,99']].forEach(function(p){
+    var b=document.createElement('button');b.className='chip';b.innerHTML='<b>'+p[0]+'</b>';
+    b.addEventListener('click',function(){
+      var seg=document.getElementById('splitModeSeg');
+      splitMode='custom';
+      seg.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x.dataset.mode==='custom');});
+      document.getElementById('equalBox').style.display='none';
+      document.getElementById('customBox').style.display='';
+      ratioIn.value=p[1];
+      ratioPresetsBox.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('on',x===b);});
+      calcSplit();
+    });
+    ratioPresetsBox.appendChild(b);
+  });
+
+  var nChipsBox=document.getElementById('nChips');
+  [2,4,8,16,32,64].forEach(function(n){
+    var b=document.createElement('button');b.className='chip'+(n===8?' on':'');b.dataset.n=n;
+    b.innerHTML='<b>1:'+n+'</b>';
+    b.addEventListener('click',function(){
+      curN=n;nCustom.value='';
+      nChipsBox.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('on',+x.dataset.n===n);});
+      ilIn.placeholder=fmt(ilSuggest[n]||0);
+      calcSplit();
+    });
+    nChipsBox.appendChild(b);
+  });
+
+  [pinIn,ilIn,ratioIn,nCustom].forEach(function(el){el.addEventListener('input',calcSplit);});
+
+  function calcSplit(){
+    var pv=parseFloat(pinIn.value);
+    var portsBox=document.getElementById('ports'), summaryBox=document.getElementById('summary');
+    if(pinIn.value.trim()===''||isNaN(pv)||(pinUnit==='mW'&&pv<=0)){
+      portsBox.innerHTML='<div class="empty-tip">输入参数后显示各端口功率</div>';summaryBox.innerHTML='';return;
+    }
+    var pinDbm=pinUnit==='dBm'?pv:10*Math.log10(pv);
+    var il=parseFloat(ilIn.value);if(isNaN(il))il=0;
+    var ratios=[];
+    if(splitMode==='equal'){
+      var n=parseInt(nCustom.value);
+      if(isNaN(n))n=curN;
+      n=Math.max(2,Math.min(128,n));
+      for(var i=0;i<n;i++)ratios.push(1);
+    }else{
+      var parts=ratioIn.value.trim().split(/[,，\s:：]+/).filter(function(s){return s!=='';});
+      parts.forEach(function(s){var r=parseFloat(s);if(!isNaN(r)&&r>0)ratios.push(r);});
+      if(ratios.length<2||ratios.length>128){
+        portsBox.innerHTML='<div class="empty-tip">请输入至少 2 个有效比例（≤128 个）</div>';summaryBox.innerHTML='';return;
+      }
+    }
+    var sum=ratios.reduce(function(a,b){return a+b;},0);
+    var theLoss=10*Math.log10(ratios.length);
+
+    summaryBox.innerHTML=
+      '<div class="s"><div class="k">端口数</div><div class="v">'+ratios.length+' 路</div></div>'+
+      '<div class="s"><div class="k">理论分光损耗</div><div class="v">'+fmt(theLoss)+' dB</div></div>'+
+      '<div class="s"><div class="k">插入损耗</div><div class="v">'+fmt(il)+' dB</div></div>';
+
+    var html='',copyLines=[];
+    copyLines.push('进光 '+fmt(pinDbm)+' dBm；'+ratios.length+' 路；IL '+fmt(il)+' dB');
+    for(var k=0;k<ratios.length;k++){
+      var pDbm=pinDbm+10*Math.log10(ratios[k]/sum)-il;
+      var pMw=Math.pow(10,pDbm/10);
+      var ratioPct=ratios[k]/sum*100;
+      var ratioTxt=fmt(ratioPct)+'%';
+      html+='<div class="port">'+
+        '<span class="idx">'+(k+1)+'</span>'+
+        '<span class="ratio">'+ratioTxt+'</span>'+
+        '<span class="pw"><div class="dbm">'+fmt(pDbm)+' dBm</div>'+
+        '<div class="mw">'+mwNice(pMw)+'</div></span></div>';
+      copyLines.push('端口'+(k+1)+' ('+ratioTxt+'): '+fmt(pDbm)+' dBm, '+mwNice(pMw));
+    }
+    portsBox.innerHTML=html;
+    portsBox._copyText=copyLines.join('\n');
+  }
+  document.getElementById('copyAll').addEventListener('click',function(){
+    var t=document.getElementById('ports')._copyText;
+    if(t)copyText(t,this);
+  });
+  // 初始化占位提示
+  ilIn.placeholder=fmt(ilSuggest[8]);
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+  }
+</script>
+</body>
+</html>

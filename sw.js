@@ -1,4 +1,4 @@
-var CACHE = 'dbm-converter-v4';
+var CACHE = 'dbm-converter-v5';
 var ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon.svg'];
 
 self.addEventListener('install', function(e){

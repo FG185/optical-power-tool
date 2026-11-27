@@ -44,7 +44,7 @@
   header p{margin:0;color:var(--muted);font-size:12px}
 
   .modules{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:6px;
     background:#0f1a30;border:1px solid var(--line);border-radius:14px;
     padding:6px;margin-bottom:20px;
   }
@@ -272,6 +272,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l2-5 4 10 4-10 2 5h5"/></svg>
       电阻编码查询
     </button>
+    <button class="module" data-target="pageMil" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 16h18M7 5v6M17 13v6"/></svg>
+      mil ⇄ mm 换算
+    </button>
   </div>
 
   <!-- ============ 模块一：dBm ⇄ mW ============ -->
@@ -442,6 +446,58 @@
       <h3 id="resRuleTitle">EIA-96 编码规则</h3>
       <div id="resRuleBody"></div>
       <table class="mul-table" id="mulTable" style="display:none"></table>
+    </section>
+  </div>
+
+  <!-- ============ 模块四：mil ⇄ mm 换算 ============ -->
+  <div class="page" id="pageMil">
+    <div class="cols">
+      <section class="card" aria-label="mil转mm">
+        <div class="card-head"><span class="dot c"></span><h2>mil → mm</h2><span class="tag">×0.0254</span></div>
+        <label class="field-label" for="milIn">输入 mil（千分之一英寸）</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="number" id="milIn" inputmode="decimal" step="any" placeholder="例如 10" autocomplete="off">
+            <span class="unit">mil</span>
+          </div>
+        </div>
+        <div class="result">
+          <span class="r-label">=</span>
+          <span class="r-value empty" id="mmOut">— mm</span>
+          <button class="copy" id="copyMm">复制</button>
+        </div>
+        <div class="btn-row"><button class="primary" id="clearMil">清空</button></div>
+      </section>
+
+      <section class="card blue" aria-label="mm转mil">
+        <div class="card-head"><span class="dot b"></span><h2>mm → mil</h2><span class="tag">×39.3701</span></div>
+        <label class="field-label" for="mmIn">输入 mm（毫米）</label>
+        <div class="input-row">
+          <div class="input-box">
+            <input type="number" id="mmIn" inputmode="decimal" step="any" placeholder="例如 0.254" autocomplete="off">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="result">
+          <span class="r-label">=</span>
+          <span class="r-value empty" id="milOut">— mil</span>
+          <button class="copy" id="copyMil">复制</button>
+        </div>
+        <div class="btn-row"><button class="primary" id="clearMm">清空</button></div>
+      </section>
+    </div>
+
+    <section class="quick">
+      <h3>PCB 常用线宽 / 孔径 · 点击填入 mil</h3>
+      <div class="chips" id="milChips"></div>
+    </section>
+
+    <section class="formula">
+      <h3>换算关系</h3>
+      <div class="frow"><span class="k">mil → mm</span><span class="v">mm = mil × 0.0254</span></div>
+      <div class="frow"><span class="k">mm → mil</span><span class="v">mil = mm ÷ 0.0254 = mm × 39.3701</span></div>
+      <div class="frow"><span class="k">基准</span><span class="v">1 mil = 0.001 inch = 0.0254 mm</span></div>
+      <div class="hint">1 英寸 = 1000 mil = 25.4 mm。PCB 设计中线宽、线间距、钻孔孔径常用 mil 表示：8/10 mil 细线、20/25 mil 常规走线、1.0 mm≈39.4 mil。</div>
     </section>
   </div>
 
@@ -831,6 +887,43 @@
   document.getElementById('resCopy').addEventListener('click',function(){
     var t=document.getElementById('pageResistor')._copyText;
     if(t)copyText(t,this);
+  });
+
+  /* ---------- 模块四：mil ⇄ mm 换算 ---------- */
+  var milIn=document.getElementById('milIn'), mmIn=document.getElementById('mmIn');
+  var mmOut=document.getElementById('mmOut'), milOut=document.getElementById('milOut');
+  var MIL_PER_MM=100/2.54; // 39.3700787...
+
+  function calcMilToMm(){
+    var v=parseFloat(milIn.value);
+    if(milIn.value.trim()===''||isNaN(v)){mmOut.textContent='— mm';mmOut.classList.add('empty');return;}
+    var mm=v*0.0254;
+    mmOut.textContent=fmt(mm)+' mm';mmOut.classList.remove('empty');
+  }
+  function calcMmToMil(){
+    var v=parseFloat(mmIn.value);
+    if(mmIn.value.trim()===''||isNaN(v)){milOut.textContent='— mil';milOut.classList.add('empty');return;}
+    var mil=v*MIL_PER_MM;
+    milOut.textContent=fmt(mil)+' mil';milOut.classList.remove('empty');
+  }
+  milIn.addEventListener('input',calcMilToMm);
+  mmIn.addEventListener('input',calcMmToMil);
+  document.getElementById('clearMil').addEventListener('click',function(){milIn.value='';calcMilToMm();milIn.focus();});
+  document.getElementById('clearMm').addEventListener('click',function(){mmIn.value='';calcMmToMil();mmIn.focus();});
+  document.getElementById('copyMm').addEventListener('click',function(){copyText(mmOut.textContent,this);});
+  document.getElementById('copyMil').addEventListener('click',function(){copyText(milOut.textContent,this);});
+
+  var milRefs=[5,8,10,15,20,25,30,40,50,60,100];
+  var milChips=document.getElementById('milChips');
+  milRefs.forEach(function(m){
+    var b=document.createElement('button');b.className='chip';
+    var mm=(m*0.0254).toFixed(3);
+    b.innerHTML='<b>'+m+'</b> mil ('+mm+'mm)';
+    b.addEventListener('click',function(){
+      milIn.value=m;calcMilToMm();
+      document.getElementById('pageMil').querySelector('.card').scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    milChips.appendChild(b);
   });
 
   if('serviceWorker' in navigator){
